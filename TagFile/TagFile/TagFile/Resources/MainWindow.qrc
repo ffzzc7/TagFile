@@ -1,4 +1,6 @@
 <RCC>
-    <qresource prefix="CMainWindow">
+    <qresource prefix="/CMainWindow">
+        <file>icon.png</file>
+        <file>icon(1).png</file>
     </qresource>
 </RCC>

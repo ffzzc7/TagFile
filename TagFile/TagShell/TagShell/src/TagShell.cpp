@@ -8,8 +8,6 @@
 #define RGBA(r,g,b,a)        ((COLORREF)( (((DWORD)(BYTE)(a))<<24) |     RGB(r,g,b) ))
 #endif
 
-
-
 //---------------------------------------------------------------------------
 //  Global variables
 //---------------------------------------------------------------------------
@@ -19,8 +17,8 @@ HINSTANCE _hModule = NULL; // DLL Module.
 //Some global default values for registering the DLL
 
 //Menu
-TCHAR szName[] = TEXT("TagFile.exe");    // modify
-TCHAR szDefaultMenutext[] = TEXT("Edit with &TagFile");// modify
+TCHAR szNppName[] = TEXT("TagFile.exe");    // modify
+TCHAR szDefaultMenutext[] = TEXT("Add Tag");// modify
 
 #ifdef WIN64
 TCHAR szShellExtensionTitle[] = TEXT("ATagFile64");// modify？
@@ -32,7 +30,7 @@ TCHAR szShellExtensionKey[] = TEXT("*\\shellex\\ContextMenuHandlers\\ATagFile");
 
 #define szHelpTextA "Add tags to the selected file(s) with TagFile"
 #define szHelpTextW L"Add tags to the selected file(s) with TagFile"
-TCHAR szMenuTitle[TITLE_SIZE];
+TCHAR szMenuTitle[TITLE_SIZE]; //64
 TCHAR szDefaultCustomcommand[] = TEXT("");
 //Icon
 DWORD isDynamic = 1;
@@ -46,8 +44,8 @@ extern "C" __declspec(dllexport) HRESULT  DllUnregisterServer(void);
 
 BOOL RegisterServer();
 BOOL UnregisterServer();
-void MsgBox(LPCTSTR lpszMsg);
 void MsgBoxError(LPCTSTR lpszMsg);
+//BOOL CheckNpp(LPCTSTR path);
 INT_PTR CALLBACK DlgProcSettings(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InvalidateIcon(HICON * iconSmall, HICON * iconLarge);
 
@@ -56,8 +54,6 @@ void InvalidateIcon(HICON * iconSmall, HICON * iconLarge);
 #else
 #define _ttoi atoi
 #endif
-
-
 
 //Types
 struct DOREGSTRUCT
@@ -108,11 +104,10 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppvOut)
 }
 
 //---------------------------------------------------------------------------
-// DllRegisterServer
+// DllRegisterServer  好像是需要安装程序打开注册表程序通过命令行来调用这个接口完成注册表注册
 //---------------------------------------------------------------------------
 extern "C"  __declspec(dllexport) HRESULT DllRegisterServer(void)
 {
-    MsgBoxError(TEXT("call DllRegisterServer"));
     return (RegisterServer() ? S_OK : E_FAIL);
 }
 
@@ -124,7 +119,7 @@ extern "C"  __declspec(dllexport) HRESULT DllUnregisterServer(void)
     return (UnregisterServer() ? S_OK : E_FAIL);
 }
 
-// 不懂
+// It is similar in purpose to DllRegisterServer or DllUnregisterServer
 STDAPI DllInstall(BOOL bInstall, LPCWSTR /*pszCmdLine*/)
 {
     //MsgBoxError(TEXT("DllInstall"));
@@ -158,11 +153,20 @@ BOOL RegisterServer()
     TCHAR* pDest = StrRChr(szDefaultPath, NULL, TEXT('\\'));
     pDest++;
     pDest[0] = 0;
-    lstrcat(szDefaultPath, szName);
+    lstrcat(szDefaultPath, szNppName);
 
+    //if (!CheckNpp(szDefaultPath))
+    //{
+    //    MsgBoxError(TEXT("To register the Notepad++ shell extension properly,\r\nplace tagShell.dll in the same directory as the Notepad++ executable."));
+    //    //return FALSE;
+    //}
 
     //get this app's path and file name
     GetModuleFileName(_hModule, szModule, MAX_PATH);
+    //MsgBoxError(szShellExtensionTitle);
+    //MsgBoxError(szModule);
+    //MsgBoxError(szDefaultMenutext);
+    //MsgBoxError(szDefaultPath);
 
     static DOREGSTRUCT ClsidEntries[] = {
         
@@ -183,6 +187,8 @@ BOOL RegisterServer()
         //Registration
         // Context menu
         {HKEY_CLASSES_ROOT,	szShellExtensionKey,	NULL,					REG_SZ,		szGUID},
+        // Icon
+        //{HKEY_CLASSES_ROOT,	TEXT("Notepad++_file\\shellex\\IconHandler"),		NULL,					REG_SZ,		szGUID},
 
         {NULL,				NULL,												NULL,					REG_SZ,		NULL}
     };
@@ -245,13 +251,6 @@ BOOL UnregisterServer() {
     return TRUE;
 }
 
-//---------------------------------------------------------------------------
-// MsgBox  没用
-//---------------------------------------------------------------------------
-void MsgBox(LPCTSTR lpszMsg) 
-{
-    MessageBox(NULL, lpszMsg, TEXT("TagShell Extension"),MB_OK);
-}
 
 //---------------------------------------------------------------------------
 // MsgBoxError
@@ -261,7 +260,28 @@ void MsgBoxError(LPCTSTR lpszMsg)
     MessageBox(NULL, lpszMsg, TEXT("TagShell Extension: Error"), MB_OK | MB_ICONWARNING);
 }
 
-// 不懂，先跳过
+//---------------------------------------------------------------------------
+// CheckNpp
+// Check if the shell handler resides in the same directory as notepad++
+//---------------------------------------------------------------------------
+//BOOL CheckNpp(LPCTSTR path) 
+//{
+//    WIN32_FIND_DATA fd;
+//    HANDLE findHandle;
+//
+//    findHandle = FindFirstFile(path, &fd);
+//    if (findHandle == INVALID_HANDLE_VALUE)
+//    {
+//        return FALSE;
+//    }
+//    else 
+//    {
+//        FindClose(findHandle);
+//    }
+//    return TRUE;
+//}
+
+// DllInstall 时用到
 INT_PTR CALLBACK DlgProcSettings(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 {
     static TCHAR customCommand[MAX_PATH] = { 0 };
@@ -355,6 +375,17 @@ INT_PTR CALLBACK DlgProcSettings(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
                 RegDeleteKey(HKEY_CLASSES_ROOT, szShellExtensionKey);
             }
 
+            if (showIcon == 1) {
+                result = RegCreateKeyEx(HKEY_CLASSES_ROOT, TEXT("Notepad++_file\\shellex\\IconHandler"), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &settingKey, NULL);
+                if (result == ERROR_SUCCESS) {
+                    result = RegSetValueEx(settingKey, NULL, 0, REG_SZ, (LPBYTE)szGUID, (lstrlen(szGUID) + 1) * sizeof(TCHAR));
+                    RegCloseKey(settingKey);
+                }
+            }
+            else if (showIcon == 0) {
+                RegDeleteKey(HKEY_CLASSES_ROOT, TEXT("Notepad++_file\\shellex\\IconHandler"));
+                RegDeleteKey(HKEY_CLASSES_ROOT, TEXT("Notepad++_file\\shellex"));
+            }
 
             PostMessage(hwndDlg, WM_CLOSE, 0, 0);
             break; }
@@ -559,6 +590,7 @@ CShellExt::~CShellExt()
         m_pDataObj->Release();
     _cRef--;
 }
+
 // *** IUnknown methods ***
 STDMETHODIMP CShellExt::QueryInterface(REFIID riid, LPVOID FAR *ppv)
 {
@@ -607,6 +639,7 @@ STDMETHODIMP_(ULONG) CShellExt::Release() {
 // *** IShellExtInit methods ***
 // Explorer 使用该方法传递给我们各种各样的信息.
 // pDataObj 是一个 IDataObject 接口指针，通过它我们可以获取用户所选择操作的文件名。
+//（用户右键点击某个Shell程序时）
 STDMETHODIMP CShellExt::Initialize(LPCITEMIDLIST /*pIDFolder*/, LPDATAOBJECT pDataObj, HKEY /*hRegKey*/) 
 {
     if (m_pDataObj)
@@ -622,9 +655,9 @@ STDMETHODIMP CShellExt::Initialize(LPCITEMIDLIST /*pIDFolder*/, LPDATAOBJECT pDa
 }
 
 // *** IContextMenu methods ***
+// 返回S_OK或其他表示初始化成功的HRESULT时。插入自定义菜单的入口。
 STDMETHODIMP CShellExt::QueryContextMenu(HMENU hMenu, UINT indexMenu, UINT idCmdFirst, UINT /*idCmdLast*/, UINT /*uFlags*/) {
     UINT idCmd = idCmdFirst;
-    //MsgBoxError(TEXT("QueryContextMenu"));
     FORMATETC fmte = {
         CF_HDROP,
         (DVTARGETDEVICE FAR *)NULL,
@@ -648,24 +681,29 @@ STDMETHODIMP CShellExt::QueryContextMenu(HMENU hMenu, UINT indexMenu, UINT idCmd
     InsertMenu(hMenu, nIndex, MF_STRING | MF_BYPOSITION, idCmd++, m_szMenuTitle);
 
 
-    if (m_showIcon) {
+    if (m_showIcon) 
+    {
         HBITMAP icon = NULL;
-        if (m_winVer >= WINVER_VISTA) {
+        if (m_winVer >= WINVER_VISTA) 
+        {
             icon = NULL;
             HICON hicon;
             DWORD menuIconWidth = GetSystemMetrics(SM_CXMENUCHECK);
             DWORD menuIconHeight = GetSystemMetrics(SM_CYMENUCHECK);
             HRESULT hr = LoadShellIcon(menuIconWidth, menuIconHeight, &hicon);
-            if (SUCCEEDED(hr)) {
+            if (SUCCEEDED(hr)) 
+            {
                 icon = IconToBitmapPARGB32(hicon, menuIconWidth, menuIconHeight);
                 DestroyIcon(hicon);
             }
         }
-        else {
+        else 
+        {
             icon = HBMMENU_CALLBACK;
         }
 
-        if (icon != NULL) {
+        if (icon != NULL) 
+        {
             MENUITEMINFO mii;
             ZeroMemory(&mii, sizeof(mii));
             mii.cbSize = sizeof(mii);
@@ -676,7 +714,8 @@ STDMETHODIMP CShellExt::QueryContextMenu(HMENU hMenu, UINT indexMenu, UINT idCmd
 
             SetMenuItemInfo(hMenu, nIndex, MF_BYPOSITION, &mii);
 
-            if (m_winVer >= WINVER_VISTA) {
+            if (m_winVer >= WINVER_VISTA) 
+            {
                 MENUINFO MenuInfo;
                 MenuInfo.cbSize = sizeof(MenuInfo);
                 MenuInfo.fMask = MIM_STYLE;
@@ -695,6 +734,7 @@ STDMETHODIMP CShellExt::QueryContextMenu(HMENU hMenu, UINT indexMenu, UINT idCmd
     return ResultFromShort(idCmd - idCmdFirst);
 }
 
+// 用户点击新插入的菜单项时，将会调用这个方法。用户点击菜单项回调的入口
 STDMETHODIMP CShellExt::InvokeCommand(LPCMINVOKECOMMANDINFO lpcmi) 
 {
     HRESULT hr = E_INVALIDARG;
@@ -705,7 +745,7 @@ STDMETHODIMP CShellExt::InvokeCommand(LPCMINVOKECOMMANDINFO lpcmi)
         switch (idCmd) 
         {
         case 0:
-            hr = Invoke(lpcmi->hwnd, lpcmi->lpDirectory, lpcmi->lpVerb, lpcmi->lpParameters, lpcmi->nShow);
+            hr = InvokeNPP(lpcmi->hwnd, lpcmi->lpDirectory, lpcmi->lpVerb, lpcmi->lpParameters, lpcmi->nShow);
             break;
         default:
             break;
@@ -714,6 +754,7 @@ STDMETHODIMP CShellExt::InvokeCommand(LPCMINVOKECOMMANDINFO lpcmi)
     return hr;
 }
 
+// 用户光标盘旋（hover）在插入的菜单项时，系统status bar将显示的信息。Vista以后的系统不再有作用，不是实现的重点。
 STDMETHODIMP CShellExt::GetCommandString(UINT_PTR, UINT uFlags, UINT FAR *, LPSTR pszName, UINT cchMax) 
 {
     LPWSTR wBuffer = (LPWSTR)pszName;
@@ -1002,7 +1043,8 @@ void InvalidateIcon(HICON * iconSmall, HICON * iconLarge) {
 }
 
 // *** Private methods ***
-STDMETHODIMP CShellExt::Invoke(HWND /*hParent*/, LPCSTR /*pszWorkingDir*/, LPCSTR /*pszCmd*/, LPCSTR /*pszParam*/, int iShowCmd) {
+STDMETHODIMP CShellExt::InvokeNPP(HWND /*hParent*/, LPCSTR /*pszWorkingDir*/, LPCSTR /*pszCmd*/, LPCSTR /*pszParam*/, int iShowCmd) 
+{
     TCHAR szFilename[MAX_PATH];
     TCHAR szCustom[MAX_PATH];
     TCHAR szNotepadExecutableFilename[3 * MAX_PATH]; // Should be able to contain szFilename plus szCustom plus some additional characters.
@@ -1056,12 +1098,12 @@ STDMETHODIMP CShellExt::Invoke(HWND /*hParent*/, LPCSTR /*pszWorkingDir*/, LPCST
     regSize = (DWORD)MAX_PATH * sizeof(TCHAR);
     result = RegQueryValueEx(settingKey, TEXT("Path"), NULL, NULL, (LPBYTE)(szFilename), &regSize);
     memset(szFilename, 0, sizeof(TCHAR) * MAX_PATH);
-    // TODO 
     lstrcat(szFilename, TEXT("C:\\Code\\TagFile\\TagFile\\Win32\\Debug\\TagFile.exe"));
     szFilename[MAX_PATH - 1] = 0;
     lstrcat(szNotepadExecutableFilename, TEXT("\""));
     lstrcat(szNotepadExecutableFilename, szFilename);
     lstrcat(szNotepadExecutableFilename, TEXT("\""));
+
     result = RegQueryValueEx(settingKey, TEXT("Custom"), NULL, NULL, (LPBYTE)(szCustom), &pathSize);
     if (result == ERROR_SUCCESS) {
         lstrcat(szNotepadExecutableFilename, TEXT(" "));

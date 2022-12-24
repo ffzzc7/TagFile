@@ -1,11 +1,12 @@
 #include "Volume.h"
-
+#include <QFile>
 InitData iniData;
 
 wstring Volume::getPath(DWORDLONG frn, wstring &path)
 {
     QTextCodec *codec = QTextCodec::codecForName("GBK");
     QTextCodec::setCodecForLocale(codec);
+
     // 查找2
     Frn_Pfrn_Name_Map::iterator it = frnPfrnNameMap.find(frn);
     if (it != frnPfrnNameMap.end())
@@ -18,84 +19,6 @@ wstring Volume::getPath(DWORDLONG frn, wstring &path)
         path += (_T("\\"));
     }
     return path;
-}
-
-vector<wstring> Volume::findFile(string str) {
-
-    // 遍历 VecNameCur
-    // 通过一个匹配函数， 得到符合的 filename
-    // 传入 frnPfrnNameMap，递归得到路径
-    qDebug() << "begin" << QDateTime::currentDateTime();
-    vector<wstring>pignorelist;
-    pignorelist.push_back(_T("C:\\Program Files"));
-    pignorelist.push_back(_T("C:\\$WinREAgent"));
-    pignorelist.push_back(_T("C:\\Ksoftware"));
-    pignorelist.push_back(_T("C:\\OneDriveTemp"));
-    pignorelist.push_back(_T("C:\\Program Files (x86)"));
-    pignorelist.push_back(_T("C:\\ProgramData"));
-    pignorelist.push_back(_T("C:\\Qt"));
-    pignorelist.push_back(_T("C:\\Windows"));
-    pignorelist.push_back(_T("C:\\Users"));
-    pignorelist.push_back(_T("C:\\Code"));
-    int notIngoreFileCount = 0;
-    int StgOpenStorageExokCount = 0;
-    int OpenokCount = 0;
-    int ReadOkCount = 0;
-    qDebug() << "VecNameCur size" << VecNameCur.size();
-    for (vector<Name_Cur>::const_iterator cit = VecNameCur.begin(); cit != VecNameCur.end(); ++cit)
-    {
-        path.clear();
-        // 还原 路径
-        // vol:\  path \ cit->filename
-        getPath(cit->pfrn, path);
-        path += cit->filename;
-
-
-        if (isIgnore(pignorelist))
-        {
-            continue;
-        }
-        //qDebug() << "not Ingore File Count" << ++notIngoreFileCount;
-        CComPtr<IPropertySetStorage> pPropertySetStorage;
-        HRESULT  hr = StgOpenStorageEx(path.c_str(), STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE, STGFMT_ANY, 0, 0, 0, IID_IPropertySetStorage, (void**)&pPropertySetStorage);
-        /* 获取属性集 */
-        if (hr == S_OK)
-        {
-            //qDebug() << "StgOpenStorageEx ok Count:" << ++StgOpenStorageExokCount<< "         path:"<<QString::fromStdWString(path);
-            //pPropertySetStorage = pStorage;
-            /* 打开Summary属性 */
-            CComPtr<IPropertyStorage> pPropertyStorage;
-            hr = pPropertySetStorage->Open(FMTID_SummaryInformation, STGM_READ | STGM_SHARE_EXCLUSIVE, &pPropertyStorage);
-            if (hr == S_OK)
-            {
-                /* 写入属性 */
-                //qDebug() << "Open ok Count" << ++OpenokCount << "         path:" << QString::fromStdWString(path);
-                PROPSPEC ps;
-                ps.ulKind = PRSPEC_PROPID;
-                ps.propid = PIDSI_TITLE;
-
-                PROPVARIANT pv;
-                hr = pPropertyStorage->ReadMultiple(1, &ps, &pv);
-                if (hr == S_OK)
-                {
-                    std::string strTag = pv.pszVal;
-                    // qDebug() << "Read ok Count" << ++ReadOkCount << "       path:" << QString::fromStdWString(path) << "    value" << QString::fromLocal8Bit(pv.pszVal);
-                    if (strTag.find(str)!= string::npos)
-                    {
-                        //path.clear();
-                        //// 还原 路径
-                        //// vol:\  path \ cit->filename
-                        //getPath(cit->pfrn, path);
-                        //path += cit->filename;
-
-                        rightFile.push_back(path);
-                    }
-                }
-            }
-        }
-    }
-    qDebug() << "end" << QDateTime::currentDateTime();
-    return rightFile;
 }
 
 bool cmpStrStr::cmpStrFilename(wstring str, wstring filename) {
@@ -148,6 +71,7 @@ bool cmpStrStr::infilename(wstring &strtmp, wstring &filename) {
     return true;
 }
 
+// 2.获取驱动盘句柄
 bool Volume::getHandle() {
     // 为\\.\C:的形式
     wstring lpFileName(_T("\\\\.\\c:"));
@@ -159,7 +83,6 @@ bool Volume::getHandle() {
         OPEN_EXISTING, // 必须包含OPEN_EXISTING, CREATE_ALWAYS可能会导致错误
         FILE_ATTRIBUTE_READONLY, // FILE_ATTRIBUTE_NORMAL可能会导致错误
         NULL);
-
 
     if (INVALID_HANDLE_VALUE != hVol)
     {
@@ -179,8 +102,7 @@ bool Volume::createUSN()
     cujd.AllocationDelta = 0; // 0表示使用默认值
 
     DWORD br;
-    if (
-        DeviceIoControl(hVol,// handle to volume
+    if (DeviceIoControl(hVol,// handle to volume
             FSCTL_CREATE_USN_JOURNAL,      // dwIoControlCode
             &cujd,           // input buffer
             sizeof(cujd),         // size of input buffer
@@ -202,8 +124,7 @@ bool Volume::createUSN()
 bool Volume::getUSNInfo()
 {
     DWORD br;
-    if (
-        DeviceIoControl(hVol, // handle to volume
+    if (DeviceIoControl(hVol, // handle to volume
             FSCTL_QUERY_USN_JOURNAL,// dwIoControlCode
             NULL,            // lpInBuffer
             0,               // nInBufferSize
@@ -221,6 +142,8 @@ bool Volume::getUSNInfo()
     }
 }
 
+
+// Buffer=>CfileName=>strFileName
 bool Volume::getUSNJournal()
 {
     MFT_ENUM_DATA_V0 med;
@@ -243,21 +166,14 @@ bool Volume::getUSNJournal()
 
     // 统计文件中...
 
-    while (0 != DeviceIoControl(hVol,
-        FSCTL_ENUM_USN_DATA,
-        &med,
-        sizeof(med),
-        Buffer,
-        BUF_LEN,
-        &usnDataSize,
-        NULL))
+    while (0 != DeviceIoControl(hVol, FSCTL_ENUM_USN_DATA,&med,sizeof(med), Buffer, BUF_LEN, &usnDataSize,NULL))
     {
-
         DWORD dwRetBytes = usnDataSize - sizeof(USN);
         // 找到第一个 USN 记录  
         UsnRecord = (PUSN_RECORD)(((PCHAR)Buffer) + sizeof(USN));
 
-        while (dwRetBytes > 0) {
+        while (dwRetBytes > 0) 
+        {
             // 获取到的信息  	
             wstring CfileName(UsnRecord->FileName);
             CfileName.resize(UsnRecord->FileNameLength / 2);/*, UsnRecord->FileNameLength / 2)*/;
@@ -265,10 +181,8 @@ bool Volume::getUSNJournal()
             pfrnName.filename = nameCur.filename = CfileName;
             pfrnName.pfrn = nameCur.pfrn = UsnRecord->ParentFileReferenceNumber;
 
-            // Vector
-            VecNameCur.push_back(nameCur);
-
             // 构建hash...
+            VecNameCur.push_back(nameCur);
             frnPfrnNameMap[UsnRecord->FileReferenceNumber] = pfrnName;
             // 获取下一个记录  
             DWORD recordLen = UsnRecord->RecordLength;
@@ -320,4 +234,66 @@ bool InitData::isNTFS(char c)
         }
     }
     return false;
+}
+
+bool Volume::iniAllFile()
+{
+    vector<wstring>registerlist =readRegisterFloder();
+    //pignorelist.push_back(_T("C:\\$WinREAgent"));
+    //pignorelist.push_back(_T("C:\\Ksoftware"));
+    //pignorelist.push_back(_T("C:\\OneDriveTemp"));
+    //pignorelist.push_back(_T("C:\\Program Files (x86)"));
+    //pignorelist.push_back(_T("C:\\ProgramData"));
+    //pignorelist.push_back(_T("C:\\Qt"));
+    //pignorelist.push_back(_T("C:\\Windows"));
+    //pignorelist.push_back(_T("C:\\Users"));
+    //pignorelist.push_back(_T("C:\\Code"));
+    for (vector<Name_Cur>::const_iterator cit = VecNameCur.begin(); cit != VecNameCur.end(); ++cit)
+    {
+        // 还原 路径
+        // vol:\  path \ cit->filename
+        path.clear();
+        getPath(cit->pfrn, path);
+        path += cit->filename;
+        // path已是全路径
+
+        if (isRegister(registerlist, path))
+        {
+            m_vecAllFileName.push_back(path);
+        }
+    }
+
+    return true;
+}
+
+bool Volume::isRegister(vector<wstring> registerlist, wstring path)
+{
+    for (vector<wstring>::iterator it = registerlist.begin(); it != registerlist.end(); ++it)
+    {
+        size_t i = it->length();
+        if (!path.compare(0, i, *it, 0, i))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+vector<wstring>Volume::readRegisterFloder()
+{ 
+    vector<wstring>ret;
+    QFile file("floder.cfg");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QString line;
+        QTextStream in(&file);  //用文件构造流
+        line = in.readLine();//读取一行放到字符串里
+        while (!line.isNull())//字符串有内容
+        {
+            ret.push_back(line.toStdWString());
+            line = in.readLine();//循环读取下行
+        }
+    }
+    file.close();
+    return ret;
 }

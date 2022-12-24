@@ -2,9 +2,6 @@
 
 #include <vector>
 #include <map>
-//#include <Winioctl.h>
-//#include <Windows.h>
-//#include <ObjIdl.h>
 #include <atlbase.h>
 #include <atlcom.h>
 #include <list>
@@ -15,14 +12,12 @@
 #include <QTextCodec>
 #include <QDateTime>
 
-#define MAXVOL 3
-
 using namespace std;
 
 typedef struct _name_cur
 {
     wstring filename;
-    DWORDLONG pfrn;   //?
+    DWORDLONG pfrn;
 }Name_Cur;
 
 typedef struct _pfrn_name
@@ -48,7 +43,6 @@ private:
     bool uplow;
     bool isOrder;
 };
-
 
 class Volume
 {
@@ -76,7 +70,8 @@ public:
             // 5.获取 USN Journal 文件的基本信息
             getUSNJournal() &&
             // 06. 删除 USN 日志文件 ( 也可以不删除 ) 
-            deleteUSN())
+            deleteUSN() &&
+            iniAllFile())
         {
             return true;
         }
@@ -86,51 +81,42 @@ public:
         }
     }
 
-    bool isIgnore(vector<wstring> pignorelist)
-    {
-        wstring tmp = path;
-        for (vector<wstring>::iterator it = pignorelist.begin(); it != pignorelist.end(); ++it)
-        {
-            size_t i = it->length();
-            if (!tmp.compare(0, i, *it, 0, i))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+
 
     bool getHandle();
     bool createUSN();
     bool getUSNInfo();
     bool getUSNJournal();
+    bool iniAllFile();
     bool deleteUSN();
-
-    vector<wstring> findFile(string str);
 
     wstring getPath(DWORDLONG frn, wstring &path);
 
-    vector<wstring> rightFile;	 // 结果
+    vector<wstring> getAllFile() { return m_vecAllFileName; }
+
+    bool isRegister(vector<wstring> registerlist, wstring path);
+
+    vector<wstring> readRegisterFloder();
 
 private:
     char vol;
     HANDLE hVol;
-    vector<Name_Cur> VecNameCur;		// 查找1
+    vector<wstring> m_vecAllFileName;		// 所有文件名
+    vector<Name_Cur> VecNameCur;
     Name_Cur nameCur;
     Pfrn_Name pfrnName;
     Frn_Pfrn_Name_Map frnPfrnNameMap;	// 查找2
     wstring path;
     USN_JOURNAL_DATA ujd;
     CREATE_USN_JOURNAL_DATA cujd;
-
-    
 };
 
 
 /*
 *	计算一共有几个盘符是NTFS格式
 */
-class InitData {
+class InitData 
+{
 public:
 
     bool isNTFS(char c);
@@ -145,43 +131,21 @@ public:
 
         return 1;
     }
-    /*
-    static UINT initThread(LPVOID pParam) {
-    InitData * pObj = (InitData*)pParam;
-    if ( pObj ) {
-    return pObj->init(NULL);
-    }
-    return false;
-    }
-    */
-    UINT init(LPVOID lp) {
 
-#ifdef TEST
-        for (i = j = 0; i < MAXVOL; ++i) {
-#else
-        for (i = j = 0; i < 26; ++i) {
-#endif
+    UINT init(LPVOID lp) 
+    {
+        for (i = j = 0; i < 26; ++i)
+        {
             cvol = i + 'A';
-            if (isNTFS(cvol)) {
+            if (isNTFS(cvol))
+            {
                 vol[j++] = cvol;
             }
         }
-        /*
-        CString showpro(_T("正在统计"));
-        for ( i=0; i<j; ++i ) {
-        initvolumelist((LPVOID)vol[i]);
-        GetDlgItem(IDC_SHOWPRO)->SetWindowText(showpro + _T(vol[i]));
-        }
-        */
         return true;
-        }
+    }
 
-    int getJ() {
-        return j;
-    }
-    char * getVol() {
-        return vol;
-    }
+    char * getVol() {return vol;}
 
     vector<string>* getIgnorePath()
     {
@@ -199,8 +163,7 @@ private:
     char vol[26];
     char cvol;
     int i, j;
-
     vector<string> ignorepath;
-    };
+};
 
 extern InitData iniData;

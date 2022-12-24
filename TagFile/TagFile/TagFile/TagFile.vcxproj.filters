@@ -1,19 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
-      <Extensions>qrc;*</Extensions>
-      <ParseFiles>false</ParseFiles>
-    </Filter>
     <Filter Include="Form Files">
       <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
       <Extensions>ui</Extensions>
@@ -28,11 +15,26 @@
       <Extensions>moc;h;cpp</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
     <Filter Include="Source Files\Ui">
       <UniqueIdentifier>{98e8cb8f-7207-4669-9b44-d6b1c14422a1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\qtsingleapplication">
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Source Files\Third">
+      <UniqueIdentifier>{d7152208-8d96-4521-898e-2b0f585d0a3b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Third\qtsingleapplication">
       <UniqueIdentifier>{e82075a4-1a99-430e-b8cf-accf1ab59e95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Third\fake_everything">
+      <UniqueIdentifier>{5c465423-fb07-47b5-abc6-e200b94d6d5e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,23 +47,20 @@
     <ClCompile Include="Src\AddTagDialog.cpp">
       <Filter>Source Files\Ui</Filter>
     </ClCompile>
-    <ClCompile Include="Src\qtsingleapplication\qtlocalpeer.cpp">
-      <Filter>Source Files\qtsingleapplication</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\qtsingleapplication\qtsingleapplication.cpp">
-      <Filter>Source Files\qtsingleapplication</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\qtsingleapplication\qtsinglecoreapplication.cpp">
-      <Filter>Source Files\qtsingleapplication</Filter>
-    </ClCompile>
     <ClCompile Include="Src\SearchThread.cpp">
       <Filter>Source Files\Ui</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Volume.cpp">
-      <Filter>Source Files\Ui</Filter>
+    <ClCompile Include="Src\Third\qtsingleapplication\qtlocalpeer.cpp">
+      <Filter>Source Files\Third\qtsingleapplication</Filter>
     </ClCompile>
-    <ClCompile Include="Src\IniThread.cpp">
-      <Filter>Source Files\Ui</Filter>
+    <ClCompile Include="Src\Third\qtsingleapplication\qtsingleapplication.cpp">
+      <Filter>Source Files\Third\qtsingleapplication</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Third\qtsingleapplication\qtsinglecoreapplication.cpp">
+      <Filter>Source Files\Third\qtsingleapplication</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Third\fake_everything\Volume.cpp">
+      <Filter>Source Files\Third\fake_everything</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -71,20 +70,17 @@
     <QtMoc Include="Src\AddTagDialog.h">
       <Filter>Source Files\Ui</Filter>
     </QtMoc>
-    <QtMoc Include="Src\qtsingleapplication\qtlocalpeer.h">
-      <Filter>Source Files\qtsingleapplication</Filter>
-    </QtMoc>
-    <QtMoc Include="Src\qtsingleapplication\qtsingleapplication.h">
-      <Filter>Source Files\qtsingleapplication</Filter>
-    </QtMoc>
-    <QtMoc Include="Src\qtsingleapplication\qtsinglecoreapplication.h">
-      <Filter>Source Files\qtsingleapplication</Filter>
-    </QtMoc>
     <QtMoc Include="Src\SearchThread.h">
       <Filter>Source Files\Ui</Filter>
     </QtMoc>
-    <QtMoc Include="Src\IniThread.h">
-      <Filter>Source Files\Ui</Filter>
+    <QtMoc Include="Src\Third\qtsingleapplication\qtlocalpeer.h">
+      <Filter>Source Files\Third\qtsingleapplication</Filter>
+    </QtMoc>
+    <QtMoc Include="Src\Third\qtsingleapplication\qtsingleapplication.h">
+      <Filter>Source Files\Third\qtsingleapplication</Filter>
+    </QtMoc>
+    <QtMoc Include="Src\Third\qtsingleapplication\qtsinglecoreapplication.h">
+      <Filter>Source Files\Third\qtsingleapplication</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -101,8 +97,8 @@
     </QtRcc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Src\Volume.h">
-      <Filter>Source Files\Ui</Filter>
+    <ClInclude Include="Src\Third\fake_everything\Volume.h">
+      <Filter>Source Files\Third\fake_everything</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

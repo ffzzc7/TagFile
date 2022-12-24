@@ -1,7 +1,19 @@
+/*!
+ * file SearchThread.h
+ * date 2022/11/20 11:54
+ *
+ * author ffzzc7
+ *
+ * brief 初始化线程
+ *
+ * TODO:
+ *
+ * note
+*/
 #pragma once
 
 #include <QThread>
-#include "Volume.h"
+#include "fake_everything/Volume.h"
 
 class CSearchThread : public QThread
 {
@@ -11,17 +23,12 @@ public:
     CSearchThread(QObject *parent);
     ~CSearchThread();
 
-    void setKey(QString strKey) { m_strKey = strKey; }
-
-    void setIniData(InitData m_initdata) { m_initdata = m_initdata; }
-
 protected:
     void run();
 
 signals:
-    void resultReady(std::vector<std::wstring> result);
-
-private:
-    QString m_strKey;
-    InitData m_initdata;
+    // 初始化完成
+    void resultReady(map<wstring, string> result);
+    // 通知进度
+    void progress(int percent);
 };

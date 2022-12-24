@@ -18,10 +18,10 @@
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLineEdit" name="lineEdit"/>
+       <widget class="QLineEdit" name="searchLineEdit"/>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="searchBtn">
         <property name="text">
          <string>Search</string>
         </property>
@@ -30,11 +30,13 @@
      </layout>
     </item>
     <item row="1" column="0">
-     <widget class="QTableWidget" name="tableWidget">
-      <property name="columnCount">
-       <number>1</number>
+     <widget class="QTableView" name="resultTable"/>
+    </item>
+    <item row="2" column="0">
+     <widget class="QProgressBar" name="progressBar">
+      <property name="value">
+       <number>0</number>
       </property>
-      <column/>
      </widget>
     </item>
    </layout>
@@ -60,8 +62,6 @@
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources>
-  <include location="MainWindow.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
